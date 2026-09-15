@@ -1,0 +1,15 @@
+package com.yash.banking_transaction_service.dto;
+
+import com.yash.banking_transaction_service.enums.AccountStatus;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+public record AccountResponse(
+        String accountNumber,
+        String ownerName,
+        BigDecimal balance,
+        Instant createdAt,
+        AccountStatus status
+) {
+}
