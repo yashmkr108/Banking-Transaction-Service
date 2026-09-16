@@ -16,7 +16,11 @@ public class AccountService {
     private final AccountMapper accountMapper;
     private final AccountNumberGenerator accountNumberGenerator;
 
-    public AccountService(AccountRepository accountRepository, AccountMapper accountMapper, AccountNumberGenerator accountNumberGenerator) {
+    public AccountService(
+            AccountRepository accountRepository,
+            AccountMapper accountMapper,
+            AccountNumberGenerator accountNumberGenerator)
+    {
         this.accountRepository = accountRepository;
         this.accountMapper = accountMapper;
         this.accountNumberGenerator = accountNumberGenerator;

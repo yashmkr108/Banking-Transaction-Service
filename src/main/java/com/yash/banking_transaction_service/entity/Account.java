@@ -2,6 +2,8 @@ package com.yash.banking_transaction_service.entity;
 
 import com.yash.banking_transaction_service.enums.AccountStatus;
 import com.yash.banking_transaction_service.exceptions.AccountStateException;
+import com.yash.banking_transaction_service.exceptions.InsufficientAvailableBalanceException;
+import com.yash.banking_transaction_service.exceptions.InsufficientReservedBalanceException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -92,4 +94,26 @@ public class Account {
         updatedAt = Instant.now();
     }
 
+
+    public void reserve(BigDecimal amount) {
+        if (reservedBalance.add(amount).compareTo(balance) > 0) {
+            throw new InsufficientAvailableBalanceException();
+        }
+        reservedBalance = reservedBalance.add(amount);
+        updatedAt = Instant.now();
+    }
+
+    public void settleDebit(BigDecimal amount) {
+        if (reservedBalance.compareTo(amount) < 0) {
+            throw new InsufficientReservedBalanceException();
+        }
+        reservedBalance = reservedBalance.subtract(amount);
+        balance = balance.subtract(amount);
+        updatedAt = Instant.now();
+    }
+
+    public void settleCredit(BigDecimal amount) {
+        balance = balance.add(amount);
+        updatedAt = Instant.now();
+    }
 }
