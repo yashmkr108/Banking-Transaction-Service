@@ -1,0 +1,20 @@
+package com.yash.banking_transaction_service.service;
+
+import com.yash.banking_transaction_service.dto.CreateTransferRequest;
+import com.yash.banking_transaction_service.dto.TransferResponse;
+import org.springframework.stereotype.Service;
+
+@Service
+public class TransferOrchestrator {
+
+    private final TransferService transferService;
+
+    public TransferOrchestrator(TransferService transferService){
+        this.transferService = transferService;
+    }
+
+    public TransferResponse createAndExecute(CreateTransferRequest request){
+        TransferResponse transfer = transferService.createTransfer(request);
+        return transferService.executeTransfer(transfer.reference());
+    }
+}

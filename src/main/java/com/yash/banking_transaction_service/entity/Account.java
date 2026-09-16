@@ -96,7 +96,7 @@ public class Account {
 
 
     public void reserve(BigDecimal amount) {
-        if (reservedBalance.add(amount).compareTo(balance) > 0) {
+        if (reservedBalance.add(amount).compareTo(balance) < 0) {
             throw new InsufficientAvailableBalanceException();
         }
         reservedBalance = reservedBalance.add(amount);
@@ -114,6 +114,15 @@ public class Account {
 
     public void settleCredit(BigDecimal amount) {
         balance = balance.add(amount);
+        updatedAt = Instant.now();
+    }
+
+    public void releaseReservation(BigDecimal amount) {
+        if (reservedBalance.compareTo(amount) < 0) {
+            throw new InsufficientReservedBalanceException();
+        }
+
+        reservedBalance = reservedBalance.subtract(amount);
         updatedAt = Instant.now();
     }
 }

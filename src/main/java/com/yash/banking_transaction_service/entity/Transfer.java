@@ -1,6 +1,7 @@
 package com.yash.banking_transaction_service.entity;
 
 import com.yash.banking_transaction_service.enums.TransferStatus;
+import com.yash.banking_transaction_service.exceptions.InvalidTransferStatusException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -50,5 +51,26 @@ public class Transfer {
 
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
+    }
+
+    public void complete(){
+        if (status != TransferStatus.PENDING) {
+            throw new InvalidTransferStatusException(
+                    "Only pending transfers can be completed"
+            );
+        }
+        status = TransferStatus.COMPLETED;
+        updatedAt = Instant.now();
+    }
+
+    public void fail() {
+        if (status != TransferStatus.PENDING) {
+            throw new InvalidTransferStatusException(
+                    "Only pending transfers can be failed"
+            );
+        }
+
+        status = TransferStatus.FAILED;
+        updatedAt = Instant.now();
     }
 }

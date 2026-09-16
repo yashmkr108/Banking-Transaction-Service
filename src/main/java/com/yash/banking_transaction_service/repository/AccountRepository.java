@@ -14,13 +14,17 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByAccountNumber(String accountNumber);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT a FROM Account a WHERE a.accountNumber = :accountNumber")
+    @Query("""
+            SELECT a FROM Account a WHERE a.accountNumber = :accountNumber
+            """)
     Optional<Account> findByAccountNumberForUpdate(
             @Param("accountNumber") String accountNumber
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT Account a FROM Account WHERE id = :id")
+    @Query("""
+            SELECT a FROM Account a WHERE a.id = :id
+            """)
     Optional<Account> findByIdForUpdate(@Param("id") Long id);
 
 }

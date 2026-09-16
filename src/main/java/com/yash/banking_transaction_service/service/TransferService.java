@@ -3,14 +3,16 @@ package com.yash.banking_transaction_service.service;
 import com.yash.banking_transaction_service.dto.CreateTransferRequest;
 import com.yash.banking_transaction_service.dto.TransferResponse;
 import com.yash.banking_transaction_service.entity.Account;
+import com.yash.banking_transaction_service.entity.LedgerEntry;
 import com.yash.banking_transaction_service.entity.Transfer;
 import com.yash.banking_transaction_service.enums.AccountStatus;
-import com.yash.banking_transaction_service.exceptions.AccountNotFoundException;
-import com.yash.banking_transaction_service.exceptions.InactiveAccountException;
-import com.yash.banking_transaction_service.exceptions.SameAccountTransferException;
+import com.yash.banking_transaction_service.enums.LedgerEntryType;
+import com.yash.banking_transaction_service.enums.TransferStatus;
+import com.yash.banking_transaction_service.exceptions.*;
 import com.yash.banking_transaction_service.generator.TransferReferenceGenerator;
 import com.yash.banking_transaction_service.mapper.TransferMapper;
 import com.yash.banking_transaction_service.repository.AccountRepository;
+import com.yash.banking_transaction_service.repository.LedgerEntryRepository;
 import com.yash.banking_transaction_service.repository.TransferRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,17 +26,20 @@ public class TransferService {
     private final TransferRepository transferRepository;
     private final TransferReferenceGenerator transferReferenceGenerator;
     private final TransferMapper transferMapper;
+    private final LedgerEntryRepository ledgerEntryRepository;
 
     public TransferService(
             AccountRepository accountRepository,
             TransferRepository transferRepository,
             TransferReferenceGenerator transferReferenceGenerator,
-            TransferMapper transferMapper
+            TransferMapper transferMapper,
+            LedgerEntryRepository ledgerEntryRepository
     ) {
         this.transferRepository = transferRepository;
         this.accountRepository = accountRepository;
         this.transferReferenceGenerator = transferReferenceGenerator;
         this.transferMapper = transferMapper;
+        this.ledgerEntryRepository = ledgerEntryRepository;
     }
 
     @Transactional
@@ -44,7 +49,7 @@ public class TransferService {
         String destinationAccountNumber = request.destinationAccountNumber();
         BigDecimal amount = request.amount();
 
-        if(sourceAccountNumber.equals(destinationAccountNumber)){
+        if (sourceAccountNumber.equals(destinationAccountNumber)) {
             throw new SameAccountTransferException();
         }
 
@@ -54,9 +59,8 @@ public class TransferService {
                 .orElseThrow(() -> new AccountNotFoundException(destinationAccountNumber));
 
 
-
-        if(sourceAccount.getStatus() != AccountStatus.ACTIVE
-                || destinationAccount.getStatus() != AccountStatus.ACTIVE){
+        if (sourceAccount.getStatus() != AccountStatus.ACTIVE
+                || destinationAccount.getStatus() != AccountStatus.ACTIVE) {
             throw new InactiveAccountException();
         }
 
@@ -64,11 +68,87 @@ public class TransferService {
 
         String reference = transferReferenceGenerator.generate();
 
-        Transfer transfer = new Transfer(reference,sourceAccount,destinationAccount,amount);
+        Transfer transfer = new Transfer(reference, sourceAccount, destinationAccount, amount);
 
         Transfer savedTransfer = transferRepository.save(transfer);
 
         return transferMapper.toResponse(savedTransfer);
+    }
+
+    @Transactional
+    public TransferResponse executeTransfer(String reference) {
+
+        Transfer transfer = transferRepository.findByReference(reference)
+                .orElseThrow(() -> new TransferNotFoundException(reference));
+
+        if (transfer.getStatus() != TransferStatus.PENDING) {
+            throw new InvalidTransferStatusException("Transfer status must be PENDING");
+        }
+
+        Long sourceAccountId = transfer.getSourceAccount().getId();
+        Long destinationAccountId = transfer.getDestinationAccount().getId();
+
+        Long firstAccountId = Math.min(sourceAccountId, destinationAccountId);
+        Long secondAccountId = Math.max(sourceAccountId, destinationAccountId);
+
+        Account firstAccount = accountRepository.findByIdForUpdate(firstAccountId)
+                .orElseThrow(AccountNotFoundException::new);
+        Account secondAccount = accountRepository.findByIdForUpdate(secondAccountId)
+                .orElseThrow(AccountNotFoundException::new);
+
+        if (transfer.getStatus() != TransferStatus.PENDING) {
+            throw new InvalidTransferStatusException("Transfer status must be PENDING");
+        }
+
+        Account sourceAccount;
+        Account destinationAccount;
+
+        if (firstAccount.getId().equals(sourceAccountId)) {
+            sourceAccount = firstAccount;
+            destinationAccount = secondAccount;
+        } else {
+            sourceAccount = secondAccount;
+            destinationAccount = firstAccount;
+        }
+
+        if (sourceAccount.getStatus() != AccountStatus.ACTIVE
+                || destinationAccount.getStatus() != AccountStatus.ACTIVE) {
+            throw new InactiveAccountException();
+        }
+
+        sourceAccount.settleDebit(transfer.getAmount());
+        destinationAccount.settleCredit(transfer.getAmount());
+
+        LedgerEntry debitEntry = new LedgerEntry(transfer, sourceAccount, LedgerEntryType.DEBIT, transfer.getAmount());
+        LedgerEntry creditEntry = new LedgerEntry(transfer, destinationAccount, LedgerEntryType.CREDIT, transfer.getAmount());
+
+        ledgerEntryRepository.save(debitEntry);
+        ledgerEntryRepository.save(creditEntry);
+
+        transfer.complete();
+
+        return transferMapper.toResponse(transfer);
+    }
+
+    @Transactional
+    public TransferResponse failTransfer(String reference) {
+        Transfer transfer = transferRepository.findByReferenceForUpdate(reference)
+                .orElseThrow(() -> new TransferNotFoundException(reference));
+
+        if (transfer.getStatus() != TransferStatus.PENDING) {
+            throw new InvalidTransferStatusException("Transfer status must be PENDING");
+        }
+
+        Long sourceAccountId = transfer.getSourceAccount().getId();
+
+        Account sourceAccount = accountRepository.findByIdForUpdate(sourceAccountId)
+                .orElseThrow(AccountNotFoundException::new);
+
+        sourceAccount.releaseReservation(transfer.getAmount());
+
+        transfer.fail();
+
+        return transferMapper.toResponse(transfer);
     }
 
 }
