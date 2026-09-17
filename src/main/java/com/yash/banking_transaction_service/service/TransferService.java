@@ -58,7 +58,6 @@ public class TransferService {
         Account destinationAccount = accountRepository.findByAccountNumber(destinationAccountNumber)
                 .orElseThrow(() -> new AccountNotFoundException(destinationAccountNumber));
 
-
         if (sourceAccount.getStatus() != AccountStatus.ACTIVE) {
             throw new InactiveAccountException("Source", sourceAccountNumber);
         }
@@ -95,6 +94,7 @@ public class TransferService {
 
         Account firstAccount = accountRepository.findByIdForUpdate(firstAccountId)
                 .orElseThrow(AccountNotFoundException::new);
+
         Account secondAccount = accountRepository.findByIdForUpdate(secondAccountId)
                 .orElseThrow(AccountNotFoundException::new);
 
@@ -138,6 +138,7 @@ public class TransferService {
 
     @Transactional
     public TransferResponse failTransfer(String reference) {
+
         Transfer transfer = transferRepository.findByReferenceForUpdate(reference)
                 .orElseThrow(() -> new TransferNotFoundException(reference));
 

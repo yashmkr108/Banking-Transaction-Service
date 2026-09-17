@@ -16,6 +16,7 @@ public class TransferOrchestrator {
 
     public TransferResponse createAndExecute(CreateTransferRequest request) {
         TransferResponse transfer = transferService.createTransfer(request);
+
         try {
             return transferService.executeTransfer(transfer.reference());
         } catch (TransferExecutionException e) {

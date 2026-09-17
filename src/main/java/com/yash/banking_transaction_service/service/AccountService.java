@@ -11,6 +11,7 @@ import com.yash.banking_transaction_service.generator.AccountNumberGenerator;
 import com.yash.banking_transaction_service.mapper.AccountMapper;
 import com.yash.banking_transaction_service.repository.AccountRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AccountService {
@@ -88,8 +89,9 @@ public class AccountService {
         return accountMapper.toResponse(savedAccount);
     }
 
+    @Transactional
     public AccountResponse deposit(String accountNumber, DepositRequest request) {
-        Account account = accountRepository.findByAccountNumber(accountNumber)
+        Account account = accountRepository.findByAccountNumberForUpdate(accountNumber)
                 .orElseThrow(() -> new AccountNotFoundException(accountNumber));
 
         if (account.getStatus() != AccountStatus.ACTIVE) {
