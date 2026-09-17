@@ -2,8 +2,11 @@ package com.yash.banking_transaction_service.service;
 
 import com.yash.banking_transaction_service.dto.AccountResponse;
 import com.yash.banking_transaction_service.dto.CreateAccountRequest;
+import com.yash.banking_transaction_service.dto.DepositRequest;
 import com.yash.banking_transaction_service.entity.Account;
+import com.yash.banking_transaction_service.enums.AccountStatus;
 import com.yash.banking_transaction_service.exceptions.AccountNotFoundException;
+import com.yash.banking_transaction_service.exceptions.AccountStateException;
 import com.yash.banking_transaction_service.generator.AccountNumberGenerator;
 import com.yash.banking_transaction_service.mapper.AccountMapper;
 import com.yash.banking_transaction_service.repository.AccountRepository;
@@ -19,8 +22,7 @@ public class AccountService {
     public AccountService(
             AccountRepository accountRepository,
             AccountMapper accountMapper,
-            AccountNumberGenerator accountNumberGenerator)
-    {
+            AccountNumberGenerator accountNumberGenerator) {
         this.accountRepository = accountRepository;
         this.accountMapper = accountMapper;
         this.accountNumberGenerator = accountNumberGenerator;
@@ -42,6 +44,11 @@ public class AccountService {
     public AccountResponse closeAccount(String accountNumber) {
         Account account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new AccountNotFoundException(accountNumber));
+
+        if (account.getStatus() == AccountStatus.CLOSED) {
+            throw new AccountStateException("Account is already closed");
+        }
+
         account.close();
         Account savedAccount = accountRepository.save(account);
         return accountMapper.toResponse(savedAccount);
@@ -50,6 +57,15 @@ public class AccountService {
     public AccountResponse activateAccount(String accountNumber) {
         Account account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new AccountNotFoundException(accountNumber));
+
+        if (account.getStatus() == AccountStatus.CLOSED) {
+            throw new AccountStateException("Closed account cannot be activated");
+        }
+
+        if (account.getStatus() == AccountStatus.ACTIVE) {
+            throw new AccountStateException("Account is already active");
+        }
+
         account.activate();
         Account savedAccount = accountRepository.save(account);
         return accountMapper.toResponse(savedAccount);
@@ -58,7 +74,28 @@ public class AccountService {
     public AccountResponse blockAccount(String accountNumber) {
         Account account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new AccountNotFoundException(accountNumber));
+
+        if (account.getStatus() == AccountStatus.CLOSED) {
+            throw new AccountStateException("Closed account cannot be blocked ");
+        }
+
+        if (account.getStatus() == AccountStatus.BLOCKED) {
+            throw new AccountStateException("Account is already blocked");
+        }
+
         account.block();
+        Account savedAccount = accountRepository.save(account);
+        return accountMapper.toResponse(savedAccount);
+    }
+
+    public AccountResponse deposit(String accountNumber, DepositRequest request) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountNotFoundException(accountNumber));
+
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            throw new AccountStateException("Only active accounts can receive deposits");
+        }
+        account.deposit(request.amount());
         Account savedAccount = accountRepository.save(account);
         return accountMapper.toResponse(savedAccount);
     }

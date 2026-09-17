@@ -2,6 +2,7 @@ package com.yash.banking_transaction_service.controller;
 
 import com.yash.banking_transaction_service.dto.AccountResponse;
 import com.yash.banking_transaction_service.dto.CreateAccountRequest;
+import com.yash.banking_transaction_service.dto.DepositRequest;
 import com.yash.banking_transaction_service.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -27,18 +28,22 @@ public class AccountController {
     }
 
     @PatchMapping("/{accountNumber}/close")
-    public AccountResponse closeAccount(@PathVariable String accountNumber){
+    public AccountResponse closeAccount(@PathVariable String accountNumber) {
         return accountService.closeAccount(accountNumber);
     }
 
     @PatchMapping("/{accountNumber}/activate")
-    public AccountResponse activateAccount(@PathVariable String accountNumber){
+    public AccountResponse activateAccount(@PathVariable String accountNumber) {
         return accountService.activateAccount(accountNumber);
     }
 
     @PatchMapping("/{accountNumber}/block")
-    public AccountResponse blockAccount(@PathVariable String accountNumber){
+    public AccountResponse blockAccount(@PathVariable String accountNumber) {
         return accountService.blockAccount(accountNumber);
     }
 
+    @PostMapping("/{accountNumber}/deposit")
+    public AccountResponse deposit(@PathVariable String accountNumber, @Valid @RequestBody DepositRequest request) {
+        return accountService.deposit(accountNumber, request);
+    }
 }

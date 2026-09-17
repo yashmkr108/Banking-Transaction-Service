@@ -59,9 +59,11 @@ public class TransferService {
                 .orElseThrow(() -> new AccountNotFoundException(destinationAccountNumber));
 
 
-        if (sourceAccount.getStatus() != AccountStatus.ACTIVE
-                || destinationAccount.getStatus() != AccountStatus.ACTIVE) {
-            throw new InactiveAccountException();
+        if (sourceAccount.getStatus() != AccountStatus.ACTIVE) {
+            throw new InactiveAccountException("Source", sourceAccountNumber);
+        }
+        if (destinationAccount.getStatus() != AccountStatus.ACTIVE) {
+            throw new InactiveAccountException("Destination", destinationAccountNumber);
         }
 
         sourceAccount.reserve(amount);
@@ -78,7 +80,7 @@ public class TransferService {
     @Transactional
     public TransferResponse executeTransfer(String reference) {
 
-        Transfer transfer = transferRepository.findByReference(reference)
+        Transfer transfer = transferRepository.findByReferenceForUpdate(reference)
                 .orElseThrow(() -> new TransferNotFoundException(reference));
 
         if (transfer.getStatus() != TransferStatus.PENDING) {
@@ -111,9 +113,13 @@ public class TransferService {
             destinationAccount = firstAccount;
         }
 
-        if (sourceAccount.getStatus() != AccountStatus.ACTIVE
-                || destinationAccount.getStatus() != AccountStatus.ACTIVE) {
-            throw new InactiveAccountException();
+        if (sourceAccount.getStatus() != AccountStatus.ACTIVE) {
+            throw new TransferExecutionException("Transfer cannot be executed because source account must be active"
+            );
+        }
+        if (destinationAccount.getStatus() != AccountStatus.ACTIVE) {
+            throw new TransferExecutionException("Transfer cannot be executed because destination account must be active"
+            );
         }
 
         sourceAccount.settleDebit(transfer.getAmount());

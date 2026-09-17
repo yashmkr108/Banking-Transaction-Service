@@ -57,46 +57,27 @@ public class Account {
     }
 
     public void block() {
-
-        if (status == AccountStatus.CLOSED) {
-            throw new AccountStateException("Closed account cannot be blocked ");
-        }
-
-        if (status == AccountStatus.BLOCKED) {
-            throw new AccountStateException("Account is already blocked");
-        }
-
         status = AccountStatus.BLOCKED;
         updatedAt = Instant.now();
     }
 
     public void activate() {
-
-        if (status == AccountStatus.CLOSED) {
-            throw new AccountStateException("Closed account cannot be activated");
-        }
-
-        if (status == AccountStatus.ACTIVE) {
-            throw new AccountStateException("Account is already active");
-        }
-
         status = AccountStatus.ACTIVE;
         updatedAt = Instant.now();
     }
 
     public void close() {
-
-        if (status == AccountStatus.CLOSED) {
-            throw new AccountStateException("Account is already closed");
-        }
-
         status = AccountStatus.CLOSED;
         updatedAt = Instant.now();
     }
 
+    public void deposit(BigDecimal amount) {
+        balance = balance.add(amount);
+        updatedAt = Instant.now();
+    }
 
     public void reserve(BigDecimal amount) {
-        if (reservedBalance.add(amount).compareTo(balance) < 0) {
+        if (reservedBalance.add(amount).compareTo(balance) > 0) {
             throw new InsufficientAvailableBalanceException();
         }
         reservedBalance = reservedBalance.add(amount);
