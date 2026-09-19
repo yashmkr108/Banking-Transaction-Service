@@ -1,7 +1,7 @@
 package com.yash.banking_transaction_service.entity;
 
 import com.yash.banking_transaction_service.enums.TransferStatus;
-import com.yash.banking_transaction_service.exceptions.InvalidTransferStatusException;
+import com.yash.banking_transaction_service.exceptions.transfer.InvalidTransferStatusException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

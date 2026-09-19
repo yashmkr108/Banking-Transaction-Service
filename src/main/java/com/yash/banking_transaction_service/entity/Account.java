@@ -1,9 +1,8 @@
 package com.yash.banking_transaction_service.entity;
 
 import com.yash.banking_transaction_service.enums.AccountStatus;
-import com.yash.banking_transaction_service.exceptions.AccountStateException;
-import com.yash.banking_transaction_service.exceptions.InsufficientAvailableBalanceException;
-import com.yash.banking_transaction_service.exceptions.InsufficientReservedBalanceException;
+import com.yash.banking_transaction_service.exceptions.account.InsufficientAvailableBalanceException;
+import com.yash.banking_transaction_service.exceptions.account.InsufficientReservedBalanceException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

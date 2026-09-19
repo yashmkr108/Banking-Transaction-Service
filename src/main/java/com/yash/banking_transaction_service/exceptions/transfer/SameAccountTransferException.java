@@ -1,4 +1,4 @@
-package com.yash.banking_transaction_service.exceptions;
+package com.yash.banking_transaction_service.exceptions.transfer;
 
 public class SameAccountTransferException extends RuntimeException {
     public SameAccountTransferException() {

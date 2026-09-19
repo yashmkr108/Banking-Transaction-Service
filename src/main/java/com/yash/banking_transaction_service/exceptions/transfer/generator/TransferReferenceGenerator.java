@@ -1,4 +1,4 @@
-package com.yash.banking_transaction_service.generator;
+package com.yash.banking_transaction_service.exceptions.transfer.generator;
 
 import org.springframework.stereotype.Component;
 

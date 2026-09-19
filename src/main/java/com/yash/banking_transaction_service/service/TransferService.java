@@ -3,13 +3,20 @@ package com.yash.banking_transaction_service.service;
 import com.yash.banking_transaction_service.dto.CreateTransferRequest;
 import com.yash.banking_transaction_service.dto.TransferResponse;
 import com.yash.banking_transaction_service.entity.Account;
+import com.yash.banking_transaction_service.entity.IdempotencyRecord;
 import com.yash.banking_transaction_service.entity.LedgerEntry;
 import com.yash.banking_transaction_service.entity.Transfer;
 import com.yash.banking_transaction_service.enums.AccountStatus;
 import com.yash.banking_transaction_service.enums.LedgerEntryType;
 import com.yash.banking_transaction_service.enums.TransferStatus;
-import com.yash.banking_transaction_service.exceptions.*;
-import com.yash.banking_transaction_service.generator.TransferReferenceGenerator;
+import com.yash.banking_transaction_service.exceptions.account.AccountNotFoundException;
+import com.yash.banking_transaction_service.exceptions.account.InactiveAccountException;
+import com.yash.banking_transaction_service.exceptions.transfer.InvalidTransferStatusException;
+import com.yash.banking_transaction_service.exceptions.transfer.SameAccountTransferException;
+import com.yash.banking_transaction_service.exceptions.transfer.TransferExecutionException;
+import com.yash.banking_transaction_service.exceptions.transfer.TransferNotFoundException;
+import com.yash.banking_transaction_service.exceptions.transfer.generator.RequestFingerprintGenerator;
+import com.yash.banking_transaction_service.exceptions.transfer.generator.TransferReferenceGenerator;
 import com.yash.banking_transaction_service.mapper.TransferMapper;
 import com.yash.banking_transaction_service.repository.AccountRepository;
 import com.yash.banking_transaction_service.repository.LedgerEntryRepository;
@@ -27,23 +34,37 @@ public class TransferService {
     private final TransferReferenceGenerator transferReferenceGenerator;
     private final TransferMapper transferMapper;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final IdempotencyService idempotencyService;
+    private final RequestFingerprintGenerator fingerprintGenerator;
 
     public TransferService(
             AccountRepository accountRepository,
             TransferRepository transferRepository,
             TransferReferenceGenerator transferReferenceGenerator,
             TransferMapper transferMapper,
-            LedgerEntryRepository ledgerEntryRepository
+            LedgerEntryRepository ledgerEntryRepository,
+            IdempotencyService idempotencyService,
+            RequestFingerprintGenerator fingerprintGenerator
     ) {
         this.transferRepository = transferRepository;
         this.accountRepository = accountRepository;
         this.transferReferenceGenerator = transferReferenceGenerator;
         this.transferMapper = transferMapper;
         this.ledgerEntryRepository = ledgerEntryRepository;
+        this.idempotencyService = idempotencyService;
+        this.fingerprintGenerator = fingerprintGenerator;
     }
 
     @Transactional
-    public TransferResponse createTransfer(CreateTransferRequest request) {
+    public TransferResponse createTransfer(CreateTransferRequest request,String idempotencyKey) {
+
+        String fingerprint = fingerprintGenerator.generate(request);
+
+        IdempotencyRecord idempotencyRecord =
+                idempotencyService.createRecord(
+                        idempotencyKey,
+                        fingerprint
+                );
 
         String sourceAccountNumber = request.sourceAccountNumber();
         String destinationAccountNumber = request.destinationAccountNumber();
@@ -72,6 +93,8 @@ public class TransferService {
         Transfer transfer = new Transfer(reference, sourceAccount, destinationAccount, amount);
 
         Transfer savedTransfer = transferRepository.save(transfer);
+
+        idempotencyRecord.attachTransfer(savedTransfer.getReference());
 
         return transferMapper.toResponse(savedTransfer);
     }
@@ -158,4 +181,24 @@ public class TransferService {
         return transferMapper.toResponse(transfer);
     }
 
+    @Transactional(readOnly = true)
+    public TransferResponse getTransferByReference(String reference) {
+
+        Transfer transfer =
+                transferRepository.findByReference(reference)
+                        .orElseThrow(() ->
+                                new TransferNotFoundException(reference)
+                        );
+
+        return transferMapper.toResponse(transfer);
+    }
+
+    @Transactional(readOnly = true)
+    public Transfer getTransfer(String reference) {
+
+        return transferRepository.findByReference(reference)
+                .orElseThrow(() ->
+                        new TransferNotFoundException(reference)
+                );
+    }
 }

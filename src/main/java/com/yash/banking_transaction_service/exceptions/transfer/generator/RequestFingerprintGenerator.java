@@ -1,0 +1,34 @@
+package com.yash.banking_transaction_service.exceptions.transfer.generator;
+
+import com.yash.banking_transaction_service.dto.CreateTransferRequest;
+import org.springframework.stereotype.Component;
+
+import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+
+@Component
+public class RequestFingerprintGenerator {
+    public String generate(CreateTransferRequest request) {
+        String canonical = request.destinationAccountNumber()
+                + "|"
+                + request.sourceAccountNumber()
+                + "|"
+                + request.amount().setScale(2, RoundingMode.UNNECESSARY);
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            byte[] hash = digest.digest(
+                    canonical.getBytes(StandardCharsets.UTF_8
+                    ));
+
+            return HexFormat.of().formatHex(hash);
+
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm not available", e);
+        }
+    }
+}

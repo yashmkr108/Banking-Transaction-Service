@@ -1,9 +1,16 @@
 package com.yash.banking_transaction_service.exceptions;
 
 import com.yash.banking_transaction_service.dto.ErrorResponse;
+import com.yash.banking_transaction_service.exceptions.account.*;
+import com.yash.banking_transaction_service.exceptions.idempotency.IdempotencyConflictException;
+import com.yash.banking_transaction_service.exceptions.idempotency.IdempotencyInProgressException;
+import com.yash.banking_transaction_service.exceptions.transfer.InvalidTransferStatusException;
+import com.yash.banking_transaction_service.exceptions.transfer.SameAccountTransferException;
+import com.yash.banking_transaction_service.exceptions.transfer.TransferNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -95,6 +102,29 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
+
+    @ExceptionHandler(IdempotencyInProgressException.class)
+    public ResponseEntity<ErrorResponse> handleIdempotencyInProgressException(IdempotencyInProgressException ex) {
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                Collections.emptyMap(),
+                Instant.now()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<ErrorResponse> handleIdempotencyConflictException(IdempotencyConflictException ex) {
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                Collections.emptyMap(),
+                Instant.now()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
     @ExceptionHandler(InvalidTransferStatusException.class)
     public ResponseEntity<ErrorResponse> handleInvalidTransferStateException(InvalidTransferStatusException ex) {
         ErrorResponse response = new ErrorResponse(
@@ -117,5 +147,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<Map<String, String>> handleMissingHeader(
+            MissingRequestHeaderException ex
+    ) {
+        return ResponseEntity.badRequest().body(
+                Map.of(
+                        "error", "Missing required header",
+                        "header", ex.getHeaderName()
+                )
+        );
+    }
 
 }

@@ -1,4 +1,4 @@
-package com.yash.banking_transaction_service.exceptions;
+package com.yash.banking_transaction_service.exceptions.account;
 
 public class InactiveAccountException extends RuntimeException {
     public InactiveAccountException(String accountType, String accountNumber) {
