@@ -6,9 +6,8 @@ import com.yash.banking_transaction_service.entity.Account;
 import com.yash.banking_transaction_service.entity.IdempotencyRecord;
 import com.yash.banking_transaction_service.entity.LedgerEntry;
 import com.yash.banking_transaction_service.entity.Transfer;
-import com.yash.banking_transaction_service.enums.AccountStatus;
-import com.yash.banking_transaction_service.enums.LedgerEntryType;
-import com.yash.banking_transaction_service.enums.TransferStatus;
+import com.yash.banking_transaction_service.enums.*;
+import com.yash.banking_transaction_service.event.TransferCompletedEvent;
 import com.yash.banking_transaction_service.exceptions.account.AccountNotFoundException;
 import com.yash.banking_transaction_service.exceptions.account.InactiveAccountException;
 import com.yash.banking_transaction_service.exceptions.transfer.InvalidTransferStatusException;
@@ -21,6 +20,7 @@ import com.yash.banking_transaction_service.mapper.TransferMapper;
 import com.yash.banking_transaction_service.repository.AccountRepository;
 import com.yash.banking_transaction_service.repository.LedgerEntryRepository;
 import com.yash.banking_transaction_service.repository.TransferRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +36,8 @@ public class TransferService {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final IdempotencyService idempotencyService;
     private final RequestFingerprintGenerator fingerprintGenerator;
+    private final ApplicationEventPublisher eventPublisher;
+    private final AuditService auditService;
 
     public TransferService(
             AccountRepository accountRepository,
@@ -44,7 +46,9 @@ public class TransferService {
             TransferMapper transferMapper,
             LedgerEntryRepository ledgerEntryRepository,
             IdempotencyService idempotencyService,
-            RequestFingerprintGenerator fingerprintGenerator
+            RequestFingerprintGenerator fingerprintGenerator,
+            ApplicationEventPublisher eventPublisher,
+            AuditService auditService
     ) {
         this.transferRepository = transferRepository;
         this.accountRepository = accountRepository;
@@ -53,10 +57,12 @@ public class TransferService {
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.idempotencyService = idempotencyService;
         this.fingerprintGenerator = fingerprintGenerator;
+        this.eventPublisher = eventPublisher;
+        this.auditService = auditService;
     }
 
     @Transactional
-    public TransferResponse createTransfer(CreateTransferRequest request,String idempotencyKey) {
+    public TransferResponse createTransfer(CreateTransferRequest request, String idempotencyKey) {
 
         String fingerprint = fingerprintGenerator.generate(request);
 
@@ -95,6 +101,13 @@ public class TransferService {
         Transfer savedTransfer = transferRepository.save(transfer);
 
         idempotencyRecord.attachTransfer(savedTransfer.getReference());
+
+        auditService.record(
+                AuditAction.TRANSFER_CREATED,
+                transfer.getReference(),
+                AuditStatus.SUCCESS,
+                "Transfer created successfully"
+        );
 
         return transferMapper.toResponse(savedTransfer);
     }
@@ -156,6 +169,13 @@ public class TransferService {
 
         transfer.complete();
 
+        auditService.record(
+                AuditAction.TRANSFER_COMPLETED,
+                transfer.getReference(),
+                AuditStatus.SUCCESS,
+                "Transfer completed successfully"
+        );
+
         return transferMapper.toResponse(transfer);
     }
 
@@ -177,6 +197,13 @@ public class TransferService {
         sourceAccount.releaseReservation(transfer.getAmount());
 
         transfer.fail();
+
+        auditService.record(
+                AuditAction.TRANSFER_FAILED,
+                transfer.getReference(),
+                AuditStatus.FAILURE,
+                "Transfer failed"
+        );
 
         return transferMapper.toResponse(transfer);
     }

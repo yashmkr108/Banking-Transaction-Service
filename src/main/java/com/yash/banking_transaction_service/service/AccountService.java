@@ -5,6 +5,8 @@ import com.yash.banking_transaction_service.dto.CreateAccountRequest;
 import com.yash.banking_transaction_service.dto.DepositRequest;
 import com.yash.banking_transaction_service.entity.Account;
 import com.yash.banking_transaction_service.enums.AccountStatus;
+import com.yash.banking_transaction_service.enums.AuditAction;
+import com.yash.banking_transaction_service.enums.AuditStatus;
 import com.yash.banking_transaction_service.exceptions.account.AccountNotFoundException;
 import com.yash.banking_transaction_service.exceptions.account.AccountStateException;
 import com.yash.banking_transaction_service.exceptions.transfer.generator.AccountNumberGenerator;
@@ -19,20 +21,34 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final AccountMapper accountMapper;
     private final AccountNumberGenerator accountNumberGenerator;
+    private final AuditService auditService;
 
     public AccountService(
             AccountRepository accountRepository,
             AccountMapper accountMapper,
-            AccountNumberGenerator accountNumberGenerator) {
+            AccountNumberGenerator accountNumberGenerator,
+            AuditService auditService
+            ) {
         this.accountRepository = accountRepository;
         this.accountMapper = accountMapper;
         this.accountNumberGenerator = accountNumberGenerator;
+        this.auditService = auditService;
     }
 
+    @Transactional
     public AccountResponse createAccount(CreateAccountRequest request) {
+
         String accountNumber = accountNumberGenerator.generate();
         Account account = new Account(request.ownerName(), accountNumber);
         Account savedAccount = accountRepository.save(account);
+
+        auditService.record(
+                AuditAction.ACCOUNT_CREATED,
+                account.getAccountNumber(),
+                AuditStatus.SUCCESS,
+                "Account created successfully"
+        );
+
         return accountMapper.toResponse(savedAccount);
     }
 
@@ -42,6 +58,7 @@ public class AccountService {
         return accountMapper.toResponse(account);
     }
 
+    @Transactional
     public AccountResponse closeAccount(String accountNumber) {
         Account account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new AccountNotFoundException(accountNumber));
@@ -51,10 +68,18 @@ public class AccountService {
         }
 
         account.close();
-        Account savedAccount = accountRepository.save(account);
-        return accountMapper.toResponse(savedAccount);
+
+        auditService.record(
+                AuditAction.ACCOUNT_CLOSED,
+                account.getAccountNumber(),
+                AuditStatus.SUCCESS,
+                "Account closed successfully"
+        );
+
+        return accountMapper.toResponse(account);
     }
 
+    @Transactional
     public AccountResponse activateAccount(String accountNumber) {
         Account account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new AccountNotFoundException(accountNumber));
@@ -68,10 +93,18 @@ public class AccountService {
         }
 
         account.activate();
-        Account savedAccount = accountRepository.save(account);
-        return accountMapper.toResponse(savedAccount);
+
+        auditService.record(
+                AuditAction.ACCOUNT_ACTIVATED,
+                account.getAccountNumber(),
+                AuditStatus.SUCCESS,
+                "Account activated successfully"
+        );
+
+        return accountMapper.toResponse(account);
     }
 
+    @Transactional
     public AccountResponse blockAccount(String accountNumber) {
         Account account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new AccountNotFoundException(accountNumber));
@@ -85,8 +118,15 @@ public class AccountService {
         }
 
         account.block();
-        Account savedAccount = accountRepository.save(account);
-        return accountMapper.toResponse(savedAccount);
+
+        auditService.record(
+                AuditAction.ACCOUNT_BLOCKED,
+                account.getAccountNumber(),
+                AuditStatus.SUCCESS,
+                "Account blocked successfully"
+        );
+
+        return accountMapper.toResponse(account);
     }
 
     @Transactional

@@ -92,7 +92,6 @@ public class TransferOrchestrator {
 
             if(existing.getStatus() == IdempotencyStatus.FAILED){
 
-                System.out.println("It's done bro");
                 String reference = existing.getTransferReference();
 
                 return transferService.getTransferByReference(reference);
