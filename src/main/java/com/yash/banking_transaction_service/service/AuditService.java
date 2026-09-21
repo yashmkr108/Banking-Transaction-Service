@@ -32,19 +32,4 @@ public class AuditService {
 
         auditLogRepository.save(auditLog);
     }
-
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void createTransferCompleteAudit(String reference) {
-        AuditLog auditLog = new AuditLog(
-                AuditAction.TRANSFER_COMPLETED,
-                reference,
-                AuditStatus.SUCCESS,
-                "Created from AFTER_COMMIT event"
-        );
-
-        auditLogRepository.save(auditLog);
-        throw new RuntimeException("Testing post-commit transaction");
-    }
-
 }

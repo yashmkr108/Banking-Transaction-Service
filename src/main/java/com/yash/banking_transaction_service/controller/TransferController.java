@@ -2,7 +2,7 @@ package com.yash.banking_transaction_service.controller;
 
 import com.yash.banking_transaction_service.dto.CreateTransferRequest;
 import com.yash.banking_transaction_service.dto.TransferResponse;
-import com.yash.banking_transaction_service.service.TransferOrchestrator;
+import com.yash.banking_transaction_service.orchestration.TransferOrchestrator;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

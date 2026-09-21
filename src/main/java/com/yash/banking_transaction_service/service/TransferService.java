@@ -1,13 +1,13 @@
 package com.yash.banking_transaction_service.service;
 
 import com.yash.banking_transaction_service.dto.CreateTransferRequest;
+import com.yash.banking_transaction_service.dto.TransferCompletedEmailPayload;
 import com.yash.banking_transaction_service.dto.TransferResponse;
 import com.yash.banking_transaction_service.entity.Account;
 import com.yash.banking_transaction_service.entity.IdempotencyRecord;
 import com.yash.banking_transaction_service.entity.LedgerEntry;
 import com.yash.banking_transaction_service.entity.Transfer;
 import com.yash.banking_transaction_service.enums.*;
-import com.yash.banking_transaction_service.event.TransferCompletedEvent;
 import com.yash.banking_transaction_service.exceptions.account.AccountNotFoundException;
 import com.yash.banking_transaction_service.exceptions.account.InactiveAccountException;
 import com.yash.banking_transaction_service.exceptions.transfer.InvalidTransferStatusException;
@@ -20,9 +20,10 @@ import com.yash.banking_transaction_service.mapper.TransferMapper;
 import com.yash.banking_transaction_service.repository.AccountRepository;
 import com.yash.banking_transaction_service.repository.LedgerEntryRepository;
 import com.yash.banking_transaction_service.repository.TransferRepository;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 
@@ -36,8 +37,9 @@ public class TransferService {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final IdempotencyService idempotencyService;
     private final RequestFingerprintGenerator fingerprintGenerator;
-    private final ApplicationEventPublisher eventPublisher;
     private final AuditService auditService;
+    private final OutboxService outboxService;
+    private final ObjectMapper objectMapper;
 
     public TransferService(
             AccountRepository accountRepository,
@@ -47,8 +49,9 @@ public class TransferService {
             LedgerEntryRepository ledgerEntryRepository,
             IdempotencyService idempotencyService,
             RequestFingerprintGenerator fingerprintGenerator,
-            ApplicationEventPublisher eventPublisher,
-            AuditService auditService
+            AuditService auditService,
+            OutboxService outboxService,
+            ObjectMapper objectMapper
     ) {
         this.transferRepository = transferRepository;
         this.accountRepository = accountRepository;
@@ -57,8 +60,9 @@ public class TransferService {
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.idempotencyService = idempotencyService;
         this.fingerprintGenerator = fingerprintGenerator;
-        this.eventPublisher = eventPublisher;
         this.auditService = auditService;
+        this.outboxService = outboxService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -168,6 +172,30 @@ public class TransferService {
         ledgerEntryRepository.save(creditEntry);
 
         transfer.complete();
+
+        TransferCompletedEmailPayload payload = new TransferCompletedEmailPayload(
+                transfer.getReference(),
+                destinationAccount.getAccountNumber(),
+                destinationAccount.getEmail(),
+                transfer.getAmount()
+        );
+
+        String payloadJson;
+
+        try {
+            payloadJson = objectMapper.writeValueAsString(payload);
+        }catch (JacksonException e) {
+            throw new TransferExecutionException(
+                    "Failed to create transfer completion event"
+            );
+        }
+
+        outboxService.create(
+                OutboxEventType.TRANSFER_COMPLETED,
+                "TRANSFER",
+                transfer.getReference(),
+                payloadJson
+        );
 
         auditService.record(
                 AuditAction.TRANSFER_COMPLETED,

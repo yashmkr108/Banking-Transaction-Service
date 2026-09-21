@@ -28,7 +28,7 @@ public class AccountService {
             AccountMapper accountMapper,
             AccountNumberGenerator accountNumberGenerator,
             AuditService auditService
-            ) {
+    ) {
         this.accountRepository = accountRepository;
         this.accountMapper = accountMapper;
         this.accountNumberGenerator = accountNumberGenerator;
@@ -39,7 +39,7 @@ public class AccountService {
     public AccountResponse createAccount(CreateAccountRequest request) {
 
         String accountNumber = accountNumberGenerator.generate();
-        Account account = new Account(request.ownerName(), accountNumber);
+        Account account = new Account(request.ownerName(), accountNumber, request.email());
         Account savedAccount = accountRepository.save(account);
 
         auditService.record(

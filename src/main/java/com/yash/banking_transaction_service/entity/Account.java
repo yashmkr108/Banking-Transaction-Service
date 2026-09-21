@@ -25,6 +25,9 @@ public class Account {
     @Column(name = "account_number", nullable = false, unique = true, length = 50)
     private String accountNumber;
 
+    @Column(nullable = false, length = 255)
+    private String email;
+
     @Column(precision = 19, scale = 2, nullable = false)
     private BigDecimal balance;
 
@@ -45,9 +48,10 @@ public class Account {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public Account(String ownerName, String accountNumber) {
+    public Account(String ownerName, String accountNumber ,String email) {
         this.ownerName = ownerName;
         this.accountNumber = accountNumber;
+        this.email = email;
         this.balance = BigDecimal.ZERO;
         this.reservedBalance = BigDecimal.ZERO;
         this.status = AccountStatus.ACTIVE;

@@ -8,6 +8,7 @@ import java.time.Instant;
 public record AccountResponse(
         String accountNumber,
         String ownerName,
+        String email,
         BigDecimal balance,
         Instant createdAt,
         AccountStatus status
