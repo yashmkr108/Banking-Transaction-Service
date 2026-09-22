@@ -2,8 +2,8 @@ package com.yash.banking_transaction_service.orchestration;
 
 import com.yash.banking_transaction_service.entity.OutboxEvent;
 import com.yash.banking_transaction_service.service.EmailService;
-import com.yash.banking_transaction_service.service.OutboxClaimService;
-import com.yash.banking_transaction_service.service.OutboxCompletionService;
+import com.yash.banking_transaction_service.service.outbox.OutboxClaimService;
+import com.yash.banking_transaction_service.service.outbox.OutboxCompletionService;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -24,19 +24,16 @@ public class OutboxPublisher {
         this.emailService = emailService;
     }
 
-    public void publishNext() {
+    public void publishNext(String workerId) {
 
         OutboxEvent event =
-                outboxClaimService.claimNextEvent("worker-1");
+                outboxClaimService.claimNextEvent(workerId);
 
         if (event == null) {
             return;
         }
 
         emailService.sendTransferCompletedEmail(event);
-
-        throw new RuntimeException("Simulated crash");
-
-//        outboxCompletionService.markCompleted(event.getId());
+        outboxCompletionService.markCompleted(event.getId());
     }
 }

@@ -1,4 +1,4 @@
-package com.yash.banking_transaction_service.exceptions.transfer.generator;
+package com.yash.banking_transaction_service.generator;
 
 import com.yash.banking_transaction_service.dto.CreateTransferRequest;
 import org.springframework.stereotype.Component;

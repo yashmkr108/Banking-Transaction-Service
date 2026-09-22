@@ -1,4 +1,4 @@
-package com.yash.banking_transaction_service.service;
+package com.yash.banking_transaction_service.service.outbox;
 
 import com.yash.banking_transaction_service.entity.OutboxEvent;
 import com.yash.banking_transaction_service.enums.OutboxEventType;

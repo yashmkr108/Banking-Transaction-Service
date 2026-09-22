@@ -1,20 +1,39 @@
 package com.yash.banking_transaction_service.worker;
 
+import com.yash.banking_transaction_service.generator.InstanceIdentity;
 import com.yash.banking_transaction_service.orchestration.OutboxPublisher;
+import com.yash.banking_transaction_service.service.outbox.OutboxRecoveryService;
+import com.yash.banking_transaction_service.service.outbox.OutboxService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import java.time.Instant;
 
 @Component
 public class OutboxWorker {
 
     private final OutboxPublisher outboxPublisher;
+    private final OutboxRecoveryService outboxRecoveryService;
+    private final InstanceIdentity instanceIdentity;
 
-    public OutboxWorker(OutboxPublisher outboxPublisher){
+    public OutboxWorker(
+            OutboxPublisher outboxPublisher,
+            OutboxRecoveryService outboxRecoveryService,
+            InstanceIdentity instanceIdentity
+    ) {
         this.outboxPublisher = outboxPublisher;
+        this.outboxRecoveryService = outboxRecoveryService;
+        this.instanceIdentity = instanceIdentity;
     }
 
     @Scheduled(fixedDelay = 5000)
     public void processOutbox() {
-        outboxPublisher.publishNext();
+
+        Instant cutoff = Instant.now().minusSeconds(45);
+
+        outboxRecoveryService.recoverStaleEvents(cutoff);
+
+        outboxPublisher.publishNext("worker-" + instanceIdentity.getWorkerId());
+
     }
 }

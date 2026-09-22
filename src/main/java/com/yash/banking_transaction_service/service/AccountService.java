@@ -9,7 +9,7 @@ import com.yash.banking_transaction_service.enums.AuditAction;
 import com.yash.banking_transaction_service.enums.AuditStatus;
 import com.yash.banking_transaction_service.exceptions.account.AccountNotFoundException;
 import com.yash.banking_transaction_service.exceptions.account.AccountStateException;
-import com.yash.banking_transaction_service.exceptions.transfer.generator.AccountNumberGenerator;
+import com.yash.banking_transaction_service.generator.AccountNumberGenerator;
 import com.yash.banking_transaction_service.mapper.AccountMapper;
 import com.yash.banking_transaction_service.repository.AccountRepository;
 import org.springframework.stereotype.Service;

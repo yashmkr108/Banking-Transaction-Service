@@ -9,7 +9,7 @@ import com.yash.banking_transaction_service.enums.TransferStatus;
 import com.yash.banking_transaction_service.exceptions.idempotency.IdempotencyConflictException;
 import com.yash.banking_transaction_service.exceptions.idempotency.IdempotencyInProgressException;
 import com.yash.banking_transaction_service.exceptions.transfer.TransferExecutionException;
-import com.yash.banking_transaction_service.exceptions.transfer.generator.RequestFingerprintGenerator;
+import com.yash.banking_transaction_service.generator.RequestFingerprintGenerator;
 import com.yash.banking_transaction_service.mapper.TransferMapper;
 import com.yash.banking_transaction_service.service.IdempotencyService;
 import com.yash.banking_transaction_service.service.TransferService;

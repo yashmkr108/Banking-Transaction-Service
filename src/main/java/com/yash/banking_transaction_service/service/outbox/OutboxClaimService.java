@@ -1,4 +1,4 @@
-package com.yash.banking_transaction_service.service;
+package com.yash.banking_transaction_service.service.outbox;
 
 import com.yash.banking_transaction_service.entity.OutboxEvent;
 import com.yash.banking_transaction_service.enums.OutboxStatus;
@@ -19,7 +19,7 @@ public class OutboxClaimService {
     public OutboxEvent claimNextEvent(String workerId) {
 
         OutboxEvent event = outboxEventRepository
-                .findFirstByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING)
+                .findNextPendingForUpdate(OutboxStatus.PENDING.name())
                 .orElse(null);
 
         if (event == null) {
