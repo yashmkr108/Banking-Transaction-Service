@@ -47,7 +47,8 @@ public class TransferOrchestrator {
 
             transfer = transferService.createTransfer(request, idempotencyKey);
 
-        } catch (DataIntegrityViolationException e) {
+        }
+        catch (DataIntegrityViolationException e) {
             // Request arrive with same idempotency key
 
             IdempotencyRecord existing =
@@ -92,7 +93,7 @@ public class TransferOrchestrator {
                 return transferService.getTransferByReference(reference);
             }
 
-            if(existing.getStatus() == IdempotencyStatus.FAILED){
+            if (existing.getStatus() == IdempotencyStatus.FAILED) {
 
                 String reference = existing.getTransferReference();
 
