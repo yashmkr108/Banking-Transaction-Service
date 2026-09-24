@@ -3,6 +3,7 @@ package com.yash.banking_transaction_service.controller;
 import com.yash.banking_transaction_service.dto.CreateTransferRequest;
 import com.yash.banking_transaction_service.dto.TransferResponse;
 import com.yash.banking_transaction_service.orchestration.TransferOrchestrator;
+import com.yash.banking_transaction_service.service.TransferService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -15,9 +16,11 @@ import org.springframework.web.bind.annotation.*;
 public class TransferController {
 
     private final TransferOrchestrator transferOrchestrator;
+    private final TransferService transferService;
 
-    public TransferController(TransferOrchestrator transferOrchestrator) {
+    public TransferController(TransferOrchestrator transferOrchestrator, TransferService transferService) {
         this.transferOrchestrator = transferOrchestrator;
+        this.transferService = transferService;
     }
 
     @PostMapping
@@ -26,6 +29,11 @@ public class TransferController {
             , @Valid @RequestBody CreateTransferRequest request
     ) {
         return transferOrchestrator.createAndExecute(idempotencyKey, request);
+    }
+
+    @PostMapping("/{reference}/execute")
+    public TransferResponse execute(@PathVariable String reference) {
+        return transferService.executeTransfer(reference);
     }
 
 }

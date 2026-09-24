@@ -34,10 +34,6 @@ public class Account {
     @Column(name = "reserved_balance", precision = 19, scale = 2, nullable = false)
     private BigDecimal reservedBalance;
 
-    @Version
-    @Column(nullable = false)
-    private Long version;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private AccountStatus status;

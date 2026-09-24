@@ -23,9 +23,6 @@ public class OutboxRecoveryService {
 
     @Transactional
     public int recoverStaleEvents(Instant cutoff) {
-        System.out.println(
-                "MAX ATTEMPTS = " + retryProperties.maxAttempts()
-        );
         return outboxEventRepository.recoverStaleEvents(
                 OutboxStatus.PROCESSING,
                 OutboxStatus.PENDING,

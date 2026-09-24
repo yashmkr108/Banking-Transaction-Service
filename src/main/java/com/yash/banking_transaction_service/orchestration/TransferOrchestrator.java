@@ -14,6 +14,7 @@ import com.yash.banking_transaction_service.mapper.TransferMapper;
 import com.yash.banking_transaction_service.service.IdempotencyService;
 import com.yash.banking_transaction_service.service.TransferService;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 @Service

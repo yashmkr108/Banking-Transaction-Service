@@ -24,16 +24,18 @@ public class OutboxPublisher {
         this.emailService = emailService;
     }
 
-    public void publishNext(String workerId) {
+    public boolean publishNext(String workerId) {
 
         OutboxEvent event =
                 outboxClaimService.claimNextEvent(workerId);
 
         if (event == null) {
-            return;
+            return false;
         }
 
         emailService.sendTransferCompletedEmail(event);
         outboxCompletionService.markCompleted(event.getId());
+
+        return true;
     }
 }
