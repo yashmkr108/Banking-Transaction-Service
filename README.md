@@ -2,8 +2,6 @@
 
 A production-oriented Spring Boot backend focused on **transactional correctness, concurrency, idempotency, failure recovery, and reliable asynchronous processing**.
 
-> Learning/portfolio project. Not intended for real financial transactions.
-
 ## Tech Stack
 
 - Java 21
